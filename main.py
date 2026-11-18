@@ -3,6 +3,8 @@ import time
 import json
 import urllib.request
 import urllib.parse
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 TOKEN = os.environ.get("TOKEN")
 BASE = f"https://api.telegram.org/bot{TOKEN}"
@@ -15,7 +17,7 @@ def api(method, data=None):
     with urllib.request.urlopen(req) as r:
         return json.loads(r.read())
 
-def main():
+def bot_loop():
     offset = 0
     print("Bot started...")
     while True:
@@ -29,12 +31,21 @@ def main():
                 chat_id = msg["chat"]["id"]
                 text = msg.get("text", "")
                 if text == "/start":
-                    api("sendMessage", {"chat_id": chat_id, "text": "اهلا يا تيتو! البوت شغال 24 ساعة 🔥"})
+                    api("sendMessage", {"chat_id": chat_id, "text": "اهلا يا تيتو! البوت شغال 24 ساعة"})
                 else:
                     api("sendMessage", {"chat_id": chat_id, "text": "وصلتني رسالتك: " + text})
         except Exception as e:
             print(e)
             time.sleep(3)
 
-if __name__ == "__main__":
-    main()
+class H(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
+    def log_message(self, *a):
+        pass
+
+def web():
+    port = int(os.environ.get("PORT", 10000))
+    HTTPServer(("0.0.0.0", port), H).serve
